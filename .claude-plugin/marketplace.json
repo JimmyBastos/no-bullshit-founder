@@ -1,18 +1,18 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "founder-skill",
-  "description": "The Founder skill pack for Claude",
+  "name": "no-bullshit-founder",
+  "description": "Claude skills that test a business idea on people who pay",
   "owner": {
-    "name": "Jake Schincariol",
-    "url": "https://opusjake.ai"
+    "name": "Jimmy Bastos",
+    "url": "https://github.com/JimmyBastos"
   },
   "plugins": [
     {
-      "name": "founder-skill",
-      "description": "Eleven Claude skills that test a business before you launch it: a board, a competitor scout, a consumer panel of 100 buyer agents, pricing, the offer, a CFO, marketing, brand, operations, a launch plan and the business plan.",
+      "name": "no-bullshit-founder",
+      "description": "Seven Claude skills that take an idea from research to profit: a guide, then idea, numbers, channels, offer, test and grow, each ending in a gate that real buyers have to pass.",
       "source": "./",
       "category": "productivity",
-      "homepage": "https://github.com/Jakeschincariol/founder-skill"
+      "homepage": "https://github.com/JimmyBastos/no-bullshit-founder"
     }
   ]
 }
