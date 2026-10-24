@@ -5,7 +5,7 @@ import unittest
 
 from _load import load
 
-vw = load("founder-pricing", "van_westendorp")
+vw = load("founder-numbers", "van_westendorp")
 
 
 def rows(n=40):
@@ -39,6 +39,15 @@ class Pricing(unittest.TestCase):
             w.writerow((3, "", 6, 8))      # incomplete
         got, dropped = vw.read(path)
         self.assertEqual((len(got), dropped), (10, 2))
+
+    def test_flat_crossing_is_reported_at_its_middle(self):
+        same = [(3.0, 4.0, 6.0, 7.0)] * 10
+        p = vw.analyse(same, step=0.01)["points"]
+        self.assertAlmostEqual(p["PME"], 6.5, places=1)
+
+    def test_only_csv_is_accepted(self):
+        with self.assertRaises(vw.PricingError):
+            vw.read(tempfile.mkdtemp())
 
     def test_too_few_answers_is_refused(self):
         with self.assertRaises(vw.PricingError):

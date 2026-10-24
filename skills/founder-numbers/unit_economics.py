@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unit economics for founder-cfo. Standard library only, no network.
+"""Unit economics for founder-numbers. Standard library only, no network.
 
 Takes one JSON file describing the business and prints the numbers a CFO would
 check before a single dollar is spent: what one unit earns, the real margin at
@@ -9,12 +9,13 @@ looks like month by month, and how long it takes to earn the startup money back.
     python3 unit_economics.py founder/numbers.json
     python3 unit_economics.py founder/numbers.json --out founder/cfo.md
     python3 unit_economics.py founder/numbers.json --json
-    python3 unit_economics.py founder/numbers.json --price 7.00 --volume 0.8
+    python3 unit_economics.py founder/numbers.json --price 7.00 --volume 0.8 --cost 1.15
 
 The input (see example.json in this folder):
 
     business          name, for the report
     unit              what you sell one of: "cup", "order", "client-month"
+    currency          symbol for the report (default "$")
     price             price per unit, before tax
     variable          [{label, cost}]  cost of ONE unit: ingredients, packaging,
                       shipping, card fees, a per-unit commission
@@ -23,15 +24,22 @@ The input (see example.json in this folder):
     startup           [{label, cost}]  one-off spend before you open
     days_per_month    selling days in a month (default 30)
     capacity_per_day  the most units a day you can physically sell (optional)
-    plan_per_day      the volume you plan for once you are up and running
-    ramp_per_day      12 numbers: units a day in each month of year 1
-                      (optional; default = plan_per_day every month)
+    ramp_per_day      12 numbers: units a day in each month of year 1 (required:
+                      month 1 is almost never the full volume)
+    plan_per_day      the volume once it runs (optional; default = last ramp month)
+    purchases_per_customer  times one customer buys in year 1 (default 1)
+    cac_benchmark     {value, channel, source}: what one customer costs on the
+                      likely channel, from a public source (optional)
 
 Every number in the report comes from that file. Nothing is looked up or
 guessed. If a field is missing the tool says so instead of filling it in.
 
---price and --volume run a what-if without editing the file: --price replaces
-the price, --volume scales every volume (0.8 = 20 percent fewer sales).
+--price, --volume and --cost run a what-if without editing the file: --price
+replaces the price, --volume scales every volume (0.8 = 20 percent fewer
+sales), --cost scales every unit cost (1.15 = 15 percent more).
+
+Gate 2 passes when contribution is above zero and max CAC (contribution times
+purchases per customer) is at least the CAC benchmark.
 """
 
 import argparse
@@ -44,14 +52,24 @@ class NumbersError(Exception):
     pass
 
 
+CURRENCY = "$"
+
+
 def _money(v):
     sign = "-" if v < 0 else ""
-    return "%s$%s" % (sign, "{:,.2f}".format(abs(v)))
+    return "%s%s%s" % (sign, CURRENCY, "{:,.2f}".format(abs(v)))
 
 
 def _whole(v):
     sign = "-" if v < 0 else ""
-    return "%s$%s" % (sign, "{:,.0f}".format(abs(round(v))))
+    return "%s%s%s" % (sign, CURRENCY, "{:,.0f}".format(abs(round(v))))
+
+
+def _num(v, field):
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        raise NumbersError("%s is not a number: %r" % (field, v))
 
 
 def _sum(items, field):
@@ -78,34 +96,38 @@ def load(path):
 
 def analyse(spec, price=None, volume=1.0):
     """Return a dict of every number in the report. Pure function, easy to test."""
+    global CURRENCY
+    CURRENCY = spec.get("currency", "$")
     if "price" not in spec and price is None:
         raise NumbersError("'price' is missing")
-    p = float(price if price is not None else spec["price"])
+    p = _num(price if price is not None else spec["price"], "price")
     if p <= 0:
         raise NumbersError("price must be above zero")
-    days = float(spec.get("days_per_month", 30))
+    days = _num(spec.get("days_per_month", 30), "days_per_month")
+    if days <= 0:
+        raise NumbersError("days_per_month must be above zero")
     var = _sum(spec.get("variable"), "variable")
     fixed = _sum(spec.get("fixed_monthly"), "fixed_monthly")
     startup = _sum(spec.get("startup"), "startup")
 
-    if "plan_per_day" not in spec and "ramp_per_day" not in spec:
-        raise NumbersError("give 'plan_per_day' or 'ramp_per_day' (12 numbers)")
-    plan = float(spec.get("plan_per_day", 0)) * volume
     ramp = spec.get("ramp_per_day")
-    if ramp is None:
-        ramp = [plan] * 12
-    else:
-        if len(ramp) != 12:
-            raise NumbersError("'ramp_per_day' needs 12 numbers, one per month (got %d)" % len(ramp))
-        ramp = [float(v) * volume for v in ramp]
-    if not plan:
-        plan = ramp[-1]
+    if not isinstance(ramp, list) or len(ramp) != 12:
+        raise NumbersError("'ramp_per_day' needs 12 numbers, one per month of year 1. "
+                           "Month 1 is almost never the full volume, so it is not filled in for you.")
+    ramp = [_num(v, "ramp_per_day[%d]" % i) * volume for i, v in enumerate(ramp)]
+    plan = _num(spec["plan_per_day"], "plan_per_day") * volume if "plan_per_day" in spec else ramp[-1]
+    purchases = _num(spec.get("purchases_per_customer", 1), "purchases_per_customer")
+    if purchases <= 0:
+        raise NumbersError("purchases_per_customer must be above zero")
 
     contribution = p - var
     contribution_pct = contribution / p
     breakeven_day = math.inf if contribution <= 0 else fixed / (contribution * days)
     plan_units_month = plan * days
-    margin_at_plan = (contribution - (fixed / plan_units_month if plan_units_month else math.inf)) / p
+    margin_at_plan = (contribution - fixed / plan_units_month) / p if plan_units_month > 0 else None
+    max_cac = contribution * purchases
+    bench = spec.get("cac_benchmark")
+    bench_value = _num(bench["value"], "cac_benchmark.value") if isinstance(bench, dict) and "value" in bench else None
 
     months = []
     cumulative = -startup
@@ -139,6 +161,18 @@ def analyse(spec, price=None, volume=1.0):
         flags.append("Year 1 loses money on operations (%s)." % _whole(year_profit))
     if payback_month is None:
         flags.append("The startup spend is not earned back within year 1.")
+    if bench_value is not None and max_cac < bench_value:
+        flags.append("Max CAC (%s) is below what customers cost on %s (%s)." % (
+            _money(max_cac), bench.get("channel", "the channel"), _money(bench_value)))
+
+    if contribution <= 0:
+        gate = ("FAIL", "each sale loses money before fixed costs")
+    elif bench_value is None:
+        gate = ("INCOMPLETE", "add cac_benchmark with a source to check max CAC")
+    elif max_cac < bench_value:
+        gate = ("FAIL", "max CAC is below the channel benchmark")
+    else:
+        gate = ("PASS", "contribution above zero and max CAC above the channel benchmark")
 
     return {
         "business": spec.get("business", ""), "unit": spec.get("unit", "unit"),
@@ -148,6 +182,7 @@ def analyse(spec, price=None, volume=1.0):
         "capacity_per_day": capacity, "year1_revenue": year_revenue, "year1_profit": year_profit,
         "year1_after_startup": year_profit - startup, "payback_month": payback_month,
         "cash_needed": cash_needed, "months": months, "flags": flags,
+        "purchases_per_customer": purchases, "max_cac": max_cac, "cac_benchmark": bench, "gate": gate,
         "variable_items": spec.get("variable", []), "fixed_items": spec.get("fixed_monthly", []),
         "startup_items": spec.get("startup", []),
     }
@@ -164,6 +199,10 @@ def sensitivity(spec):
         it["cost"] = float(it["cost"]) * 1.15
     rows.append(("Unit costs +15%", analyse(worse)))
     return rows
+
+
+def _pct(v):
+    return "n/a" if v is None else "%.0f%%" % (v * 100)
 
 
 def report(spec, a):
@@ -191,8 +230,8 @@ def report(spec, a):
     be = a["breakeven_per_day"]
     L.append("- **Break-even: %s %ss a day.** Below that you lose money every month." % (
         "never (each unit loses money)" if math.isinf(be) else "{:,.0f}".format(math.ceil(be)), u))
-    L.append("- **Profit margin at your plan** (%s a day): **%.0f%%** of every sale, after every cost." % (
-        "{:,.0f}".format(a["plan_per_day"]), a["margin_at_plan"] * 100))
+    L.append("- **Profit margin at your plan** (%s a day): **%s** of every sale, after every cost." % (
+        "{:,.0f}".format(a["plan_per_day"]), _pct(a["margin_at_plan"])))
     if a["capacity_per_day"] is not None:
         L.append("- Capacity: %s a day." % a["capacity_per_day"])
     L.append("")
@@ -209,13 +248,29 @@ def report(spec, a):
     L.append("- Startup money earned back: %s." % ("month %d" % a["payback_month"] if a["payback_month"] else "not within year 1"))
     L.append("- Cash you need before it pays for itself: **%s**." % _whole(a["cash_needed"]))
     L.append("")
+    L.append("## What you can pay for a customer")
+    L.append("")
+    L.append("- **Max CAC: %s.** That is contribution (%s) times %s purchase(s) per customer in year 1. "
+             "Spend more than this to get a customer and you lose money on them." % (
+                 _money(a["max_cac"]), _money(a["contribution"]), "{:g}".format(a["purchases_per_customer"])))
+    b = a["cac_benchmark"]
+    if isinstance(b, dict) and "value" in b:
+        L.append("- Benchmark: %s per customer on %s (source: %s)." % (
+            _money(float(b["value"])), b.get("channel", "the channel"), b.get("source", "not given")))
+    else:
+        L.append("- No CAC benchmark given yet.")
+    L.append("")
+    L.append("## Gate 2: %s" % a["gate"][0])
+    L.append("")
+    L.append(a["gate"][1][0].upper() + a["gate"][1][1:] + ".")
+    L.append("")
     L.append("## What if")
     L.append("")
     L.append("| scenario | margin at plan | break-even a day | year 1 profit |")
     L.append("| --- | ---: | ---: | ---: |")
     for name, s in sensitivity(spec):
         be = s["breakeven_per_day"]
-        L.append("| %s | %.0f%% | %s | %s |" % (name, s["margin_at_plan"] * 100,
+        L.append("| %s | %s | %s | %s |" % (name, _pct(s["margin_at_plan"]),
                                               "never" if math.isinf(be) else "{:,.0f}".format(math.ceil(be)),
                                               _whole(s["year1_profit"])))
     L.append("")
@@ -236,6 +291,7 @@ def main(argv=None):
     ap.add_argument("--json", action="store_true", help="print the numbers as JSON")
     ap.add_argument("--price", type=float, help="what-if price")
     ap.add_argument("--volume", type=float, default=1.0, help="what-if volume multiplier")
+    ap.add_argument("--cost", type=float, default=1.0, help="what-if unit cost multiplier")
     args = ap.parse_args(argv)
     try:
         spec = load(args.numbers)
@@ -245,8 +301,12 @@ def main(argv=None):
             spec = dict(spec)
             if "plan_per_day" in spec:
                 spec["plan_per_day"] = float(spec["plan_per_day"]) * args.volume
-            if "ramp_per_day" in spec:
-                spec["ramp_per_day"] = [float(v) * args.volume for v in spec["ramp_per_day"]]
+            if isinstance(spec.get("ramp_per_day"), list):
+                spec["ramp_per_day"] = [_num(v, "ramp_per_day") * args.volume for v in spec["ramp_per_day"]]
+        if args.cost != 1.0:
+            spec = json.loads(json.dumps(spec))
+            for it in spec.get("variable", []):
+                it["cost"] = _num(it.get("cost"), "variable.cost") * args.cost
         a = analyse(spec)
     except NumbersError as e:
         print("error: %s" % e, file=sys.stderr)
@@ -254,6 +314,7 @@ def main(argv=None):
     if args.json:
         out = {k: v for k, v in a.items() if not k.endswith("_items")}
         out["breakeven_per_day"] = None if math.isinf(out["breakeven_per_day"]) else out["breakeven_per_day"]
+        out["gate"] = {"result": a["gate"][0], "reason": a["gate"][1]}
         print(json.dumps(out, indent=1))
         return 0
     text = report(spec, a)
