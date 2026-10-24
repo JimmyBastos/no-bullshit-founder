@@ -1,196 +1,162 @@
-# The Founder skill
+# No-bullshit founder
 
-Eleven Claude skills that test a business before you launch it. Free, MIT, no
-signup, no API key, nothing to connect.
+Before you build anything, it reads 100 real people talking about your
+problem. Then it makes strangers pay before you call it a business.
 
-`skills/founder-board` `skills/founder-marketing` `skills/founder-cfo`
-`skills/founder-consumer` `skills/founder-launch` `skills/founder-pricing`
-`skills/founder-offer` `skills/founder-competitors` `skills/founder-brand`
-`skills/founder-ops` `skills/founder-plan`
+Claude skills that test a business idea on people who pay, not on agents who
+agree. Being tested with real money. Free, MIT.
 
-One of them is your board of directors, trained on the frameworks of Alex
-Hormozi, Peter Thiel and Steve Jobs. One is your marketing director. One is your
-CFO and finds your real profit margins. And one is the consumer panel: it spins
-up 100 buyer agents trained on your target customer and runs your business
-through 100 buyer scenarios.
+A fork of [founder-skill](https://github.com/Jakeschincariol/founder-skill) by
+Jake Schincariol, being rebuilt from scratch.
 
-So you know how to launch, how to market and how to actually make money, before
-you spend thousands of dollars finding out the hard way.
+## The hypothesis
+
+Only real buyers can prove demand. Agents can't: asked whether they would
+buy, they say yes too easily. Demand alone doesn't make a good business,
+though. The numbers have to work too, and the things buyers never mention have
+to check out: costs, suppliers, regulation, competitors.
+
+So agents do two jobs here. They do the desk research. And they keep you from
+repeating mistakes other founders already made: pricing below cost, no
+break-even, testing on friends, spending before you know what success looks
+like, calling a winner on three sales.
+
+A good business here means people pay at a price where the numbers work, and
+then they buy again.
+
+This is a hypothesis, not a result. It is wrong if:
+
+- across several tests, the model's predicted conversion lands within a
+  margin set in advance of the real conversion on the same offer. Then agents can judge
+  demand, and the real-buyer step is overkill.
+- ideas that passed the buyer test later fail, through refunds, no repeat
+  purchase or losses. Then the test is measuring the wrong thing.
+
+Each test logs both numbers, so the hypothesis can be checked.
+
+## Why I changed the approach
+
+I'm an engineer. I can build, talk to clients and read numbers and ads, but
+I've never validated a business. The original pack promised to test an idea
+with 100 buyer agents. When I looked inside, the panel was one model
+answering itself 100 times, and the business plan used its buy rate to call
+the idea profitable. Models lean agreeable (the original skill itself says to
+read the buy rate as an upper bound), so that number says more about the
+model than about the market.
+
+I kept the parts that do real work, like the numbers and the success line
+written before a test, and replaced the panel. The 100 are now real people:
+posts and reviews where they describe the problem, what they already pay and
+what they wish existed, each with a link. That is still research, not proof.
+Proof is what people give up: time, reputation, money. So every step ends in
+a gate, and only interviews and real sales pass them.
+
+## What this repo is for
+
+A guide for people who can build but have never validated a business. It
+explains each step in plain words and always tells you what comes next.
+
+1. **Idea.** The problem, who has it, who pays, what you know and what you are
+   assuming. Desk research, 100 real people who wrote about the problem, and
+   interviews you run.
+2. **Numbers.** Price, profit per sale, break-even and the most you can pay to
+   get a customer.
+3. **Channels.** Where your buyers already are, worked out from interviews,
+   from where competitors advertise and from search data. Then pick one or two
+   channels to test.
+4. **Offer.** The smallest thing you can sell, and a page to sell it.
+5. **Test.** Real buyers, paid or organic traffic, a rule written before the
+   test. For B2B: interviews, letters of intent and paid pilots.
+6. **Grow.** Repeat purchase, the real flow from order to delivery, one change
+   at a time.
+
+Each step has a gate. You move on only when the rule you wrote is met.
+
+## How it works
+
+- **The model does the hand work, you decide.** The model researches
+  competitors, prices, search data and regulation, drafts the scripts, pages
+  and ads, runs the numbers, and brings you each decision with options and a
+  recommendation. You decide, approve spending and publishing, and talk to
+  buyers. Pausing a test that is losing money runs on its own.
+- **It asks instead of guessing.** When information is missing, the skill
+  asks. Answers go into a `founder/` folder that the next skill reads, so
+  nobody asks twice.
+- **Baseline first.** Before a change, it records how things are today, with
+  the number you already track and how you measure it.
+- **The rule is written before the test:** a number, a date, and the result
+  that would prove the idea wrong. Whoever decides agrees to it up front.
+- **Warm and cold sales are counted apart.** Sales from your own network show
+  the product works. Only sales to strangers show there is a market.
+- **A sale counts after the refund window.** Online buyers can often cancel
+  (7 days in Brazil, 14 in the EU), so a pre-sale only counts once that
+  window closes.
+- **A failed test is checked before the idea is blamed.** If the ad or the
+  page didn't reach enough people, the test is inconclusive, not a no.
+- **Scripts do the measuring and deciding.** The model drafts and summarizes.
+  A loop that calls the model at every step would burn the tokens this fork
+  is trying to save.
+- **Every claim says where it came from**, and verified data is kept apart
+  from the model's interpretation.
+- **Every gate has a rule, a threshold and a deadline, set before the
+  work.** The skill proposes the threshold and you confirm it. If a gate
+  fails, you change one thing and retry, up to three times, then pivot or
+  stop. You can skip a gate, but the skip is logged with your reason.
+- **A devil's advocate speaks at each gate.** It gives the single strongest
+  reason to stop and what would change its mind. Then you decide.
+
+## The skills
+
+| command | step | what it does |
+| --- | --- | --- |
+| `/founder` | guide | Reads your `founder/` folder, tells you where you are and what to do next, explains business terms |
+| `/founder-idea` | 1 | Writes the idea down, ranks assumptions, does the desk research, prepares interviews you run |
+| `/founder-numbers` | 2 | Profit per sale, break-even, year 1, cash needed, and the most you can pay for a customer |
+| `/founder-channels` | 3 | Finds where your buyers are from evidence, ranks channels, picks one or two to test |
+| `/founder-offer` | 4 | The MVP, the offer, the page or B2B proposal, and ad drafts |
+| `/founder-test` | 5 | Runs the test with a rule written first, and decides with a script |
+| `/founder-grow` | 6 | Baseline, real numbers, the flow from order to delivery, one change at a time |
+
+Run them in order, or run `/founder` and it tells you which one is next.
 
 ## Install
 
-Paste this repo link into Claude and say `install skill`:
+In Claude Code:
 
 ```
-https://github.com/Jakeschincariol/founder-skill
-
-install skill
+/plugin marketplace add JimmyBastos/no-bullshit-founder
+/plugin install no-bullshit-founder@no-bullshit-founder
 ```
 
-Or as a plugin, in Claude Code:
-
-```
-/plugin marketplace add Jakeschincariol/founder-skill
-/plugin install founder-skill@founder-skill
-```
-
-Claude Code namespaces plugin skills, so installed as a plugin they show up as
-`/founder-skill:founder-board` and so on. Copy the folders instead if you want
-plain `/founder-board`:
+Or copy the folders, to get plain `/founder-idea` and so on:
 
 ```bash
-git clone https://github.com/Jakeschincariol/founder-skill.git
-cp -r founder-skill/skills/founder-* ~/.claude/skills/
+git clone https://github.com/JimmyBastos/no-bullshit-founder.git
+cp -r no-bullshit-founder/skills/founder* ~/.claude/skills/
 ```
 
-Project-local instead of global: copy the same folders into your repo's
-`.claude/skills/`. No Claude Code at all? Paste any single `SKILL.md` at the top
-of a chat and it runs as a mode. You lose the sub-agents and the Python tools,
-but the method works.
-
-The tools need Python 3.8 or newer. Nothing to pip install.
-
-## The eleven
-
-| command | job | what it does |
-| --- | --- | --- |
-| `/founder-board` | Board of Directors | Three board members, each a sub-agent applying one published framework (Offers, from *$100M Offers*; Monopoly, from *Zero to One*; Product, from Isaacson's *Steve Jobs*), score the idea, name what would kill it and vote. |
-| `/founder-competitors` | Competitor Scout | Maps direct competitors, indirect ones and substitutes from public sources, with prices, positioning and what their customers complain about, every fact linked. |
-| `/founder-consumer` | Consumer Panel | Spins up a swarm of buyer agents (100 by default) from your target customer, each with its own income, habits and objection, and tallies who buys, who doesn't and why. |
-| `/founder-pricing` | Pricing Strategist | Turns the panel's price answers into an acceptable price range, sets it against competitors and your margin, and picks what to test. |
-| `/founder-offer` | Offer Architect | Builds the offer stack (bonuses, guarantee, real urgency, a name) that answers the panel's objections, then re-tests it on the panel. |
-| `/founder-cfo` | CFO | Unit economics: contribution per sale, the real profit margin, break-even per day, year 1 month by month, cash needed, payback, what-ifs. |
-| `/founder-marketing` | Marketing Director | Positioning, the channels your buyers use, a dated 30-day launch campaign, ten hooks and the most you can pay for a customer. |
-| `/founder-brand` | Brand Designer | Name candidates with the trademark, domain and handle checks to run, a voice, a promise and a brief for the look. |
-| `/founder-ops` | Operations Manager | Suppliers, staffing, day-one routines, tools, the permits to check and a risk register, feeding real costs back to the CFO. |
-| `/founder-launch` | Launch Lead | A cheap real-world test first, then a dated countdown, the launch-day run sheet and the first 30 days. |
-| `/founder-plan` | Business Planner | Compiles everything into one business plan with a verdict computed from the numbers: Profitable, Not yet or Incomplete. |
-
-## How to use it
-
-Run them in this order. Each one reads what the others wrote, in a `founder/`
-folder in your project.
-
-```
-board -> competitors -> consumer -> pricing -> offer -> cfo -> marketing -> brand -> ops -> launch -> plan
-```
-
-An example: a matcha café in Toronto, iced matcha lattes at $6.50 a cup. (Every
-input is in the example files in this repo, so you can run the tools on it.)
-
-1. **`/founder-board`** writes `founder/idea.md` from what you told it and puts it
-   in front of three board members. Each scores it, lists the risks and votes:
-   fund, fund if, or pass. The conditions become a checklist for the rest.
-2. **`/founder-competitors`** maps the matcha bars and coffee shops within walking
-   distance, what they charge for a latte and what their reviews complain about.
-3. **`/founder-consumer`** builds the target customer (urban professionals, 24 to
-   38, who buy coffee most days), deals 100 buyer cards across income, habits and
-   objections, and runs one sub-agent per buyer. Back comes who buys, who passes,
-   the reasons in their words ("my coffee place is closer", "$6.50 is steep for a
-   drink") and what would flip a no.
-4. **`/founder-pricing`** reads the panel's four price answers per buyer into a
-   price range and checks $6.50 against it and against the competitors.
-5. **`/founder-offer`** answers the top objections with the offer (a launch-week
-   price, a loyalty card) and re-runs a quick panel to see if the buy rate moves.
-6. **`/founder-cfo`** runs the unit economics. With the example numbers: each cup
-   leaves $4.76 after its own costs, break-even is 186 cups a day, the profit
-   margin at the planned 383 cups a day is 38%, year 1 makes $93,926 on operations
-   after a slow ramp, the $25,280 startup spend is earned back in month 8, and the
-   founder needs $34,092 in cash before it pays for itself.
-7. **`/founder-marketing`**, **`/founder-brand`**, **`/founder-ops`** and
-   **`/founder-launch`** turn it into a 30-day campaign, a name and a look, the
-   suppliers and routines, and a dated launch that starts with a pop-up to test
-   real buyers.
-8. **`/founder-plan`** compiles `founder/business-plan.md`. Its verdict is
-   computed, not written: Profitable only if every unit earns money, year 1 makes
-   a profit, break-even fits capacity and enough of the panel buys.
-
-You can also run any one on its own. `/founder-consumer --quick` on an idea you
-are only thinking about is a good way to find out if you should.
-
-## The tools
-
-Four of them, all standard-library Python. None touch the network.
+The research steps need web access. The scripts need Python 3.8 or newer and
+nothing else:
 
 ```bash
-python3 skills/founder-cfo/unit_economics.py founder/numbers.json --out founder/cfo.md   # margins, break-even, year 1
-python3 skills/founder-consumer/panel.py init --customer founder/customer.json --pitch founder/pitch.md
-python3 skills/founder-pricing/van_westendorp.py founder/panel/answers --price 6.50       # the acceptable price range
-python3 skills/founder-plan/compile.py --dir founder                                     # the plan and its verdict
+python3 skills/founder-numbers/unit_economics.py founder/numbers.json   # the numbers and gate 2
+python3 skills/founder-numbers/van_westendorp.py survey.csv             # price range from a real survey
+python3 skills/founder-test/decide.py founder/tests/001.json            # the test result and gate 5
+python3 -m unittest discover -s tests                                   # the tests
 ```
 
-**`unit_economics.py`** reads one JSON (example: `skills/founder-cfo/example.json`)
-and reports contribution, break-even, the margin at plan, year 1 by month, cash
-needed, payback and three what-ifs. Every number traces to an input; a missing
-field is an error, never a guess.
+## Status
 
-**`panel.py`** deals persona cards from your target customer (same seed, same
-cards), writes one brief per buyer, checks the answers and tallies them. It never
-answers for a buyer.
+The seven skills are written, but no real business has gone through them
+yet. Expect rough edges.
 
-**`van_westendorp.py`** reads four price answers per buyer (from the panel, or a
-CSV from a real survey) and finds the points of marginal cheapness and
-expensiveness, the optimal and the indifference price.
+"Being tested with real money" means the skills are being run on real
+businesses now. Each test goes into the repo with its rule, its numbers and
+the outcome, including the ones that fail. Testing one business validates
+that business, not the skills; the skills earn the word "tested" only after
+several.
 
-**`compile.py`** assembles the plan and computes the verdict.
+## Credit and license
 
-```bash
-python3 -m unittest discover -s tests -v
-```
-
-## Fine print
-
-**The board applies published frameworks. It is not those people.** The three
-lenses are short summaries, in our words, of ideas from *$100M Offers* by Alex
-Hormozi, *Zero to One* by Peter Thiel with Blake Masters, and Walter Isaacson's
-biography of Steve Jobs. The board never speaks as them, quotes them or claims
-they endorse anything. This project is not affiliated with any of them.
-
-**The consumer panel is simulated buyers, not customers.** It is a fast, cheap way
-to find objections, segments and wording before you spend. It is not a forecast:
-language models lean agreeable, so read the buy rate as an upper bound, and
-confirm the big calls with real people. `/founder-launch` starts with exactly that
-test. Panel answers are research; never use them as testimonials.
-
-**The numbers are only as good as the inputs.** The CFO marks every estimate as an
-estimate and asks for real quotes. Check costs with suppliers and the structure,
-payroll and tax with an accountant.
-
-**Research uses public sources, with links.** No invented competitors, prices,
-reviews or quotes. No scraping against a site's terms.
-
-**Not financial, legal or tax advice.** Permits, trademarks and claims depend on
-where you are. The skills tell you what to check and where; a professional
-confirms it.
-
-## Files
-
-```
-skills/founder-board/        SKILL.md, lenses.md
-skills/founder-competitors/  SKILL.md
-skills/founder-consumer/     SKILL.md, panel.py, customer.example.json, pitch.example.md
-skills/founder-pricing/      SKILL.md, van_westendorp.py
-skills/founder-offer/        SKILL.md
-skills/founder-cfo/          SKILL.md, unit_economics.py, example.json
-skills/founder-marketing/    SKILL.md
-skills/founder-brand/        SKILL.md
-skills/founder-ops/          SKILL.md
-skills/founder-launch/       SKILL.md
-skills/founder-plan/         SKILL.md, compile.py
-tests/                       the tests for every tool
-```
-
-Your own files live in `founder/` in your project. The skills read each other's.
-
-## Credit
-
-Made by Jake Schincariol, [opusjake.ai](https://opusjake.ai). Siblings:
-[Arena](https://github.com/Jakeschincariol/arena-skill),
-[Replica](https://github.com/Jakeschincariol/replica-skill),
-[X](https://github.com/Jakeschincariol/x-agent-skill),
-[LinkedIn](https://github.com/Jakeschincariol/linkedin-agent-skill),
-[Instagram](https://github.com/Jakeschincariol/instagram-agent-skill).
-
-## License
-
-MIT. Take it, change it, ship it.
+Forked from founder-skill by Jake Schincariol, MIT. This fork is MIT too; the
+original notice stays in `LICENSE`.
