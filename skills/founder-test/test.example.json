@@ -1,0 +1,36 @@
+{
+  "id": "001",
+  "hypothesis": "Office workers within 1 km pre-order iced matcha at $6.50 from an Instagram ad",
+  "channel": "Instagram ads",
+  "started": "2026-11-02",
+  "rule": {
+    "target_cold_sales": 4,
+    "max_cac": 57.12,
+    "cap_spend": 400,
+    "deadline": "2026-11-16",
+    "min_visitors": 300,
+    "refund_days": 7,
+    "kill_multiple": 2,
+    "p_best": 0.95
+  },
+  "prediction": {"conversion": 0.04, "source": "founder-idea step 4, model estimate, level 0"},
+  "arms": [
+    {
+      "name": "pain: coffee crash at 3pm",
+      "spend": 180,
+      "visitors": 260,
+      "sales": [
+        {"date": "2026-11-03", "warm": false, "refunded": false},
+        {"date": "2026-11-04", "warm": true, "refunded": false},
+        {"date": "2026-11-06", "warm": false, "refunded": false},
+        {"date": "2026-11-09", "warm": false, "refunded": true}
+      ]
+    },
+    {
+      "name": "outcome: calm focus",
+      "spend": 120,
+      "visitors": 190,
+      "sales": []
+    }
+  ]
+}

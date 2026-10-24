@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Price sensitivity (Van Westendorp) for founder-pricing. Standard library only.
+"""Price sensitivity (Van Westendorp) for founder-numbers. Standard library only.
 
-Every buyer on the panel answers four questions: at what price would it be too
+Every respondent answers four questions: at what price would it be too
 cheap to trust, a bargain, getting expensive, and too expensive to buy. Plotted
 together, those four answers give you an acceptable price range and the price
 that leaves the fewest people unhappy.
 
-    python3 van_westendorp.py founder/panel/answers
-    python3 van_westendorp.py prices.csv --out founder/pricing-curve.md
-    python3 van_westendorp.py founder/panel/answers --json
+    python3 van_westendorp.py survey.csv
+    python3 van_westendorp.py survey.csv --price 6.50 --out founder/price-range.md
+    python3 van_westendorp.py survey.csv --json
 
-Input is either the panel's answers folder (one JSON per buyer, written by
-founder-consumer) or a CSV with the columns too_cheap, cheap, expensive,
-too_expensive (one row per respondent; extra columns are ignored). A respondent
+Input is a CSV from a survey of real people, with the columns too_cheap, cheap,
+expensive, too_expensive (one row per respondent; extra columns are ignored).
+Never feed it answers written by a model. A respondent
 missing any of the four numbers, or giving them out of order (too cheap must be
 the lowest, too expensive the highest), is dropped and counted.
 
@@ -23,15 +23,16 @@ The four points it reports:
     OPP  optimal price point            as many say "too cheap" as "too expensive"
     IPP  indifference price point       as many say "a bargain" as "expensive"
 
-PMC to PME is the acceptable range. These are answers from simulated buyers:
-use the range to choose what to TEST, then test it with real ones.
+PMC to PME is the acceptable range. With few respondents, use it to choose
+which prices to test with real sales, not as the final price.
+
+When two curves touch along a flat stretch (common when answers cluster on
+round numbers), the crossing is reported at the middle of that stretch.
 """
 
 import argparse
 import csv
-import glob
 import json
-import os
 import sys
 
 KEYS = ("too_cheap", "cheap", "expensive", "too_expensive")
@@ -51,25 +52,15 @@ def _f(v):
 
 def read(path):
     """Return (rows, dropped) where rows are (too_cheap, cheap, expensive, too_expensive)."""
+    if not path.endswith(".csv"):
+        raise PricingError("give a .csv from a survey of real people")
     raw = []
-    if os.path.isdir(path):
-        for fp in sorted(glob.glob(os.path.join(path, "*.json"))):
-            try:
-                with open(fp, encoding="utf-8") as fh:
-                    a = json.load(fh)
-            except (json.JSONDecodeError, UnicodeDecodeError):
-                raw.append(None)
-                continue
-            raw.append(tuple(_f(a.get("price_" + k)) for k in KEYS))
-    elif path.endswith(".csv"):
-        with open(path, newline="", encoding="utf-8") as fh:
-            for r in csv.DictReader(fh):
-                raw.append(tuple(_f(r.get(k)) for k in KEYS))
-    else:
-        raise PricingError("give the panel's answers folder or a .csv")
+    with open(path, newline="", encoding="utf-8") as fh:
+        for r in csv.DictReader(fh):
+            raw.append(tuple(_f(r.get(k)) for k in KEYS))
     rows, dropped = [], 0
     for r in raw:
-        if r is None or any(v is None for v in r) or not (r[0] <= r[1] <= r[2] <= r[3]):
+        if any(v is None for v in r) or not (r[0] <= r[1] <= r[2] <= r[3]):
             dropped += 1
             continue
         rows.append(r)
@@ -86,15 +77,22 @@ def curves(rows, grid):
 
 
 def cross(grid, falling, rising):
-    """First price where the rising curve meets the falling one (linear interpolation)."""
+    """First price where the rising curve meets the falling one.
+
+    A clean crossing is found by linear interpolation. If the curves are equal
+    along a flat stretch, the middle of that stretch is returned.
+    """
     for i in range(1, len(grid)):
         d0 = rising[i - 1] - falling[i - 1]
         d1 = rising[i] - falling[i]
-        if d0 <= 0 <= d1 and d1 != d0:
+        if d0 == 0:
+            j = i - 1
+            while j + 1 < len(grid) and rising[j + 1] - falling[j + 1] == 0:
+                j += 1
+            return (grid[i - 1] + grid[j]) / 2.0
+        if d0 < 0 < d1:
             t = -d0 / (d1 - d0)
             return grid[i - 1] + t * (grid[i] - grid[i - 1])
-        if d0 == 0:
-            return grid[i - 1]
     return None
 
 
@@ -125,7 +123,7 @@ def report(res, dropped, price=None):
     m = lambda v: "n/a" if v is None else "$%.2f" % v
     p = res["points"]
     L = ["# Price sensitivity", "",
-         "%d complete answers%s. Simulated buyers: use this to pick what to test, not as the final word." % (
+         "%d complete answers%s. Use the range to pick prices to test with real sales." % (
              res["n"], (", %d dropped (incomplete or out of order)" % dropped) if dropped else ""), "",
          "| point | price | what it means |", "| --- | ---: | --- |",
          "| PMC | %s | below this, too many think it is too cheap to be good |" % m(p["PMC"]),
@@ -144,7 +142,7 @@ def report(res, dropped, price=None):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("source", help="the panel's answers folder, or a CSV")
+    ap.add_argument("source", help="a CSV from a survey of real people")
     ap.add_argument("--price", type=float, help="your current price, to place it on the range")
     ap.add_argument("--out", help="write the report here (markdown)")
     ap.add_argument("--json", action="store_true")
